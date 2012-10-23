@@ -118,6 +118,9 @@ $ sbt
    (Int,Map[String,Int]) |<| (Int,(Int,Int)) // convert second Int implicitly to String
    (Int,Map[String,String]) |<| (Int,(Int,Int)) // convert second and third Int implicitly to String
    ```
+ * Is the current approach with invariant type parameters enough?
+ * What are the consequences of having every Monoid <: Aggregator
+   vs. Laemmels approach of every Aggregator <: Monoid
 
 ## References
 

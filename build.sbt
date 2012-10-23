@@ -1,4 +1,8 @@
-name := "MapReduce for Scala Collections"
+name := "scala-collection-mapreduce"
+
+description := "MapReduce for Scala Collections"
+
+organization := "net.van-antwerpen"
 
 version := "0.1.0-SNAPSHOT"
 
