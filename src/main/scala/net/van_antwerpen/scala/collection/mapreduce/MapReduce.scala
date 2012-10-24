@@ -1,7 +1,7 @@
 package net.van_antwerpen.scala.collection.mapreduce
 
 import scala.collection._
-import Aggregators._
+import Aggregator._
 
 object MapReduce {
 

@@ -5,7 +5,7 @@ import scala.collection.generic.CanBuildFrom
 import scalaz._
 import Scalaz._
 
-object Monoids {
+object Monoid {
 
   implicit def OptionNothingZero: Zero[Option[Nothing]] =
     zero(None)

@@ -1,19 +1,21 @@
 package net.van_antwerpen.scala.collection.mapreduce
 
-import scala.collection._
-import scala.collection.generic.CanBuildFrom
 import scalaz._
 import Scalaz._
-import Monoids._
 
-object Aggregators {
+abstract class Aggregator[Coll,Elem]
+               (implicit cm: Monoid[Coll]) {
+  val zero = cm.zero
+  def append(c1: Coll, c2: => Coll) = cm append (c1, c2)
+  def insert(c: Coll, e: Elem): Coll
+}
 
-  abstract class Aggregator[Coll,Elem]
-                 (implicit cm: Monoid[Coll]) {
-    val zero = cm.zero
-    def append(c1: Coll, c2: => Coll) = cm append (c1, c2)
-    def insert(c: Coll, e: Elem): Coll
-  }
+object Aggregator {
+  import scala.collection._
+  import scala.collection.generic.CanBuildFrom
+  import scalaz._
+  import Scalaz._
+  import Monoid._
 
   implicit def MonoidAggregator[Coll]
                (implicit mm: Monoid[Coll]) =

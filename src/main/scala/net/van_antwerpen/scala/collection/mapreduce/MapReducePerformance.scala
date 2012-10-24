@@ -4,8 +4,8 @@ import java.net.URL
 import scala.collection.immutable.SortedMap
 import scalaz._
 import Scalaz._
-import Monoids._
-import Aggregators._
+import Monoid._
+import Aggregator._
 import MapReduce._
 
 
