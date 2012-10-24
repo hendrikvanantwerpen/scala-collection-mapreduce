@@ -51,9 +51,6 @@ infer the multoids over maps and collections, but still only one level
 deep. Also the difference between multoid and monoid values in maps is
 still there.
 
-Note that using the CanBuildFrom approach, the Multoids only work for
-immutable collections. (is this true??)
-
 Performance was bad when we used to builder, because our function is
 called for every element, but then rebuild the collection using the
 builder. Vast improvement when we used the builder only for the empty
@@ -90,8 +87,10 @@ that returns an object with an apply method, we can make our code even
 DRY-er.  We only have to specify the expected collection, the element
 type is inferred from the map function we pass.
 
-Finally got builders to work with proper speed, don't know what went
-wrong before. No ugly casts anymore and only Map is a special case.
+For some reason using the builders is very slow. We use the normal
+operations and cast to the correct type. Since we always create the
+same type of collection as we start with, assuming zero is correct,
+this should not fail.
 
 ## Comparison to traditional MapReduce and Monoidic MapReduce
 

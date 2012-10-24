@@ -23,16 +23,20 @@ object Aggregator {
       override def insert(c1: Coll, c2: Coll) = mm.append(c1,c2)
     }
 
-  implicit def GenTraversableOnceAggregator[Elem, Repr[X] <: GenTraversableOnce[X]]
-                                           (implicit mm: Monoid[Repr[Elem]],
-                                                     bf: CanBuildFrom[Repr[Elem],Elem,Repr[Elem]]) =
+  implicit def GenSeqAggregator[Elem, Repr[X] <: GenSeq[X]]
+                               (implicit mm: Monoid[Repr[Elem]]) =
     new Aggregator[Repr[Elem],Elem] {
-      override def insert(c: Repr[Elem], e: Elem) = {
-        val b = bf(c)
-        b ++= c.seq
-        b += e
-        b.result
-      }
+      override def insert(c: Repr[Elem], e: Elem) =
+        (c :+ e)
+        .asInstanceOf[Repr[Elem]]
+    }
+
+  implicit def GenSetAggregator[Elem, Repr[X] <: GenSet[X]]
+                               (implicit mm: Monoid[Repr[Elem]]) =
+    new Aggregator[Repr[Elem],Elem] {
+      override def insert(c: Repr[Elem], e: Elem) =
+        (c + e)
+        .asInstanceOf[Repr[Elem]]
     }
 
   implicit def MapAggregator[Key, Value, Repr[K,V] <: GenMap[K,V], Elem]
@@ -40,14 +44,11 @@ object Aggregator {
                          va: Aggregator[Value,Elem],
                          bf: CanBuildFrom[Repr[Key,Value],(Key,Value),Repr[Key,Value]]) =
     new Aggregator[Repr[Key,Value],(Key,Elem)] {
-      override def insert(c: Repr[Key,Value], e: (Key,Elem)) = {
-        val b = bf(c)
-        b ++= c.seq
-        b += (e._1 -> c.get( e._1 )
+      override def insert(c: Repr[Key,Value], e: (Key,Elem)) =
+        (c + (e._1 -> c.get( e._1 )
                        .map( v => va.insert(v,e._2) )
-                       .getOrElse( va.insert(va.zero,e._2) ))
-        b.result
-      }
+                       .getOrElse( va.insert(va.zero,e._2) )))
+        .asInstanceOf[Repr[Key,Value]]
     }
 
   implicit def Tuple2Aggregator[C1,V1,C2,V2]
