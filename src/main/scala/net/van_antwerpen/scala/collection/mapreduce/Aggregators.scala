@@ -1,101 +1,140 @@
 package net.van_antwerpen.scala.collection.mapreduce
 
-import scalaz._
-import Scalaz._
+import scala.collection._
 
-abstract class Aggregator[Coll,Elem]
-               (implicit cm: Monoid[Coll]) {
-  val zero = cm.zero
-  def append(c1: Coll, c2: => Coll) = cm append (c1, c2)
-  def insert(c: Coll, e: Elem): Coll
+trait Zero[A] {
+  def zero: A
 }
+
+trait Aggregator[A,B] extends Zero[A] {
+  def insert(a: A, b: B): A
+  def flatInsert(a: A, bs: GenTraversableOnce[B]): A =
+    (a /: bs)( insert (_,_) )
+  def unit(b: B): A =
+    insert (zero,b) 
+} 
+
+trait Monoid[A] extends Aggregator[A,A] {
+  def unit(a: A): A = a
+} 
 
 object Aggregator {
   import scala.collection._
   import scala.collection.generic.CanBuildFrom
-  import scalaz._
-  import Scalaz._
-  import Monoid._
+  import scalaz.Scalaz._
 
-  implicit def MonoidAggregator[Coll]
-               (implicit mm: Monoid[Coll]) =
-    new Aggregator[Coll,Coll] {
-      override def insert(c1: Coll, c2: Coll) = mm.append(c1,c2)
+  implicit def GenTraversableOnceZero[Repr <: GenTraversableOnce[_]]
+                                     (implicit bf: CanBuildFrom[Nothing,Nothing,Repr])
+                                     : Zero[Repr] =
+    new Zero[Repr] {
+      def apply: Repr = bf().result
     }
 
-  implicit def GenSeqAggregator[Elem, Repr[X] <: GenSeq[X]]
-                               (implicit mm: Monoid[Repr[Elem]]) =
+  implicit def GenSeqAggregator[Repr[X] <: GenSeq[X], Elem]
+                               (implicit z: Zero[Repr[Elem]]) =
     new Aggregator[Repr[Elem],Elem] {
-      override def insert(c: Repr[Elem], e: Elem) =
-        (c :+ e)
-        .asInstanceOf[Repr[Elem]]
+      override def zero: Repr[Elem] = z.zero
+      override def insert(s: Repr[Elem], e: Elem) =
+        (s :+ e).asInstanceOf[Repr[Elem]]
     }
 
-  implicit def GenSetAggregator[Elem, Repr[X] <: GenSet[X]]
-                               (implicit mm: Monoid[Repr[Elem]]) =
+  implicit def GenSeqMonoid[Repr[X] <: GenSeq[X],Elem]
+                           (implicit a: Aggregator[Repr[Elem],Elem]) =
+    new Monoid[Repr[Elem]] {
+      override def zero: Repr[Elem] = a.zero
+      override def insert(s1: Repr[Elem], s2: Repr[Elem]) =
+        (s1 ++ s2).asInstanceOf[Repr[Elem]]
+    }
+
+  implicit def GenSetAggregator[Repr[X] <: GenSet[X], Elem]
+                               (implicit z: Zero[Repr[Elem]]) =
     new Aggregator[Repr[Elem],Elem] {
+      override def zero: Repr[Elem] = z.zero
       override def insert(c: Repr[Elem], e: Elem) =
         (c + e)
         .asInstanceOf[Repr[Elem]]
     }
 
-  implicit def MapAggregator[Key, Value, Repr[K,V] <: GenMap[K,V], Elem]
-               (implicit mm: Monoid[Repr[Key,Value]],
-                         va: Aggregator[Value,Elem],
-                         bf: CanBuildFrom[Repr[Key,Value],(Key,Value),Repr[Key,Value]]) =
+  implicit def GenSetMonoid[Repr[X] <: GenSet[X], Elem]
+                           (implicit a: Aggregator[Repr[Elem],Elem]) =
+    new Monoid[Repr[Elem]] {
+      override def zero: Repr[Elem] = a.zero
+      override def insert(s1: Repr[Elem], s2: Repr[Elem]) =
+        (s1 ++ s2).asInstanceOf[Repr[Elem]]
+    }
+
+  implicit def GenMapAggregator[Repr[K,V] <: GenMap[K,V], Key, Value, Elem]
+                               (implicit z: Zero[Repr[Key,Value]],
+                                         va: Aggregator[Value,Elem]) =
     new Aggregator[Repr[Key,Value],(Key,Elem)] {
-      override def insert(c: Repr[Key,Value], e: (Key,Elem)) =
-        (c + (e._1 -> c.get( e._1 )
+      override def zero: Repr[Key,Value] = z.zero
+      override def insert(m: Repr[Key,Value], e: (Key,Elem)) =
+        (m + (e._1 -> m.get( e._1 )
                        .map( v => va.insert(v,e._2) )
                        .getOrElse( va.insert(va.zero,e._2) )))
         .asInstanceOf[Repr[Key,Value]]
     }
 
-  implicit def Tuple2Aggregator[C1,V1,C2,V2]
-               (implicit mm: Monoid[(C1,C2)],
-                         m1: Aggregator[C1,V1],
-                         m2: Aggregator[C2,V2]) =
-    new Aggregator[(C1,C2),(V1,V2)] {
-      override def insert(c: (C1,C2), v: (V1,V2)) =
-        (m1.insert(c._1, v._1),
-         m2.insert(c._2, v._2))
+  implicit def GenMapMonoid[Repr[K,V] <: GenMap[K,V], Key, Value]
+                           (implicit a: Aggregator[Repr[Key,Value],(Key,Value)]) =
+    new Monoid[Repr[Key,Value]] {
+      override def zero: Repr[Key,Value] = a.zero
+      override def insert(m1: Repr[Key,Value], m2: Repr[Key,Value]) =
+       (m1 /: m2)( (m:Repr[Key,Value], e2:(Key,Value)) => a insert (m,e2) )
     }
 
-  implicit def Tuple3Aggregator[C1,V1,C2,V2,C3,V3]
-               (implicit mm: Monoid[(C1,C2,C3)],
-                         m1: Aggregator[C1,V1],
-                         m2: Aggregator[C2,V2],
-                         m3: Aggregator[C3,V3]) =
-    new Aggregator[(C1,C2,C3),(V1,V2,V3)] {
-      override def insert(c: (C1,C2,C3), v: (V1,V2,V3)) =
-        (m1.insert(c._1,v._1),
-         m2.insert(c._2,v._2),
-         m3.insert(c._3,v._3))
+  implicit def Tuple2Aggregator[A1,A2,B1,B2]
+               (implicit a1: Aggregator[A1,B1],
+                         a2: Aggregator[A2,B2]) =
+    new Aggregator[(A1,A2),(B1,B2)] {
+      override def zero = (a1.zero,a2.zero)
+      override def insert(a: (A1,A2), b: (B1,B2)) =
+        (a1.insert(a._1, b._1),
+         a2.insert(a._2, b._2))
     }
 
-  implicit def Tuple4Aggregator[C1,V1,C2,V2,C3,V3,C4,V4]
-               (implicit mm: Monoid[(C1,C2,C3,C4)],
-                         m1: Aggregator[C1,V1],
-                         m2: Aggregator[C2,V2],
-                         m3: Aggregator[C3,V3],
-                         m4: Aggregator[C4,V4]) =
-    new Aggregator[(C1,C2,C3,C4),(V1,V2,V3,V4)] {
-      override def insert(c: (C1,C2,C3,C4), v: (V1,V2,V3,V4)) =
-        (m1.insert(c._1,v._1),
-         m2.insert(c._2,v._2),
-         m3.insert(c._3,v._3),
-         m4.insert(c._4,v._4))
+  implicit def Tuple3Aggregator[A1,A2,A3,B1,B2,B3]
+               (implicit a1: Aggregator[A1,B1],
+                         a2: Aggregator[A2,B2],
+                         a3: Aggregator[A3,B3]) =
+    new Aggregator[(A1,A2,A3),(B1,B2,B3)] {
+      override def zero = (a1.zero,a2.zero,a3.zero)
+      override def insert(a: (A1,A2,A3), b: (B1,B2,B3)) =
+        (a1.insert(a._1,b._1),
+         a2.insert(a._2,b._2),
+         a3.insert(a._3,b._3))
     }
 
-  class AggregatorIdentity[Coll](c: Coll) {
+  implicit def Tuple4Aggregator[A1,A2,A3,A4,B1,B2,B3,B4]
+               (implicit a1: Aggregator[A1,B1],
+                         a2: Aggregator[A2,B2],
+                         a3: Aggregator[A3,B3],
+                         a4: Aggregator[A4,B4]) =
+    new Aggregator[(A1,A2,A3,A4),(B1,B2,B3,B4)] {
+      override def zero = (a1.zero,a2.zero,a3.zero,a4.zero)
+      override def insert(a: (A1,A2,A3,A4), b: (B1,B2,B3,B4)) =
+        (a1.insert(a._1,b._1),
+         a2.insert(a._2,b._2),
+         a3.insert(a._3,b._3),
+         a4.insert(a._4,b._4))
+    }
 
-    def |<|[Elem](e: Elem)
-                 (implicit m: Aggregator[Coll,Elem]) =
-      m.insert(c, e)
+  implicit def ScalazMonoidAggregator[A]
+                                     (implicit m: scalaz.Monoid[A]) =
+    new Monoid[A] {
+      def zero = m.zero
+      def insert(a1: A, a2: A)  = m append (a1,a2)
+    }
 
-    def |<<|[Elem](es: GenTraversableOnce[Elem])
-                  (implicit m: Aggregator[Coll,Elem]) =
-      (c /: es)( (c,e) => m.insert(c, e) )
+  class AggregatorIdentity[A](a: A) {
+
+    def |<|[B](b: B)
+              (implicit agg: Aggregator[A,B]) =
+      agg insert (a, b)
+
+    def |<<|[B](bs: GenTraversableOnce[B])
+               (implicit agg: Aggregator[A,B]) =
+      agg flatInsert (a, bs)
 
   }
 

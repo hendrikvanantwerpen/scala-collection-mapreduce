@@ -130,23 +130,77 @@ $ sbt
 
 ## Notes & ideas
 
+ * Create independent hierarchy Aggregator > Monoid. Have implicit
+   converters for scalaz Monoids and Reducers if people want to include
+   those. This way people only have to use scalaz if they want
  * Scalaz dependency:
    - Will users need to pull in scalaz or the accumulators themselves?
      It seems so, can we carry them along with MapReduce automagically?
    - Will users be repulsed by the scalaz dependency?
+ * If we specify a aggregator ourselves, can we infer the mapreduce type as in:
+   ```scala
+   xs.mapReduce[...inferred?...](wordCount)(GenMapAggregator[String,Int,SortedMap]) // Maybe change the order of the type parameters for readability
+   ```
+ * How easy is it to specify custom aggregators? And if not on the first level?
+ * How easy is it to write custom aggregators?
+ * Is it easy to combine/compose aggregators?
+ * Be generous in what we accept, like
+   ```scala
+   SortedMap[String,Int] |<<| Map[String,Int]
+   ```
+   Is there a real difference between flapMap and this, if we consider:
+   ```scala
+   SortedMap[String,Int] |<<| Traversable[(String,Int)]
+   ```
+   Can we make it accept elements but allow overrides for efficient implementations
+   if the collections is better known?
  * Do we want to resolve implicits on every level? E.g.
    ```scala
    (Int,Map[String,Int]) |<| (Int,(Int,Int)) // convert second Int implicitly to String
+   ```
+   ```scala
    (Int,Map[String,String]) |<| (Int,(Int,Int)) // convert second and third Int implicitly to String
    ```
- * Is the current approach with invariant type parameters enough?
-   This seems mainly a problem on the Monoid level ( SortedMap[K,V] |+| Map[K,V] breaks, but could work )
  * What are the consequences of having every Monoid <: Aggregator
    vs. Laemmels approach of every Aggregator <: Monoid
-   - Making Aggregator a Monoid and implicitly convert Monoids to
-     Aggregators causes some weird errors. The latter is needed because
-     we cannot take a Monoid as the general function argument. We wouldn't
-     have enough type parameters to infer the aggregator if needed.
+   - It's needed for type inference
+   - The Monoid will have doubles doing the same thing though
+
+```scala
+trait Aggregator[A,B] {
+  def zero: A
+  def insert(a: A, b: B): A
+  def flatInsert(a: A, bs: GenTraversableOnce[B]): A = (a /: bs)( append (_,_) )
+  def unit(b: B): A = insert (zero,b)
+}
+
+trait Monoid[A] extends [A,A] {
+  def zero: A
+  def insert(a1: A, a2: A): A
+  def flatInsert(a: A, as: GenTraversableOnce[A]): A = (a /: as)( append (_,_) )
+  def unit(a: A): A = a
+}
+
+implicit def ScalazMonoidAggregator[Val]
+                                   (implicit m: scalaz.Monoid[Val]) =
+  new Aggregator[Val,Val] {
+    def zero = m.zero
+    def append(v1: Val, v2: Val)  = m append (v1, v2)
+  }
+
+implicit def ScalazReducerAggregator[Coll,Elem]
+                                    (implicit m: scalaz.Reducer[Elem,Coll] = ???
+
+/* A Monoid is an Aggregator where Coll and Elem are the same.
+ * As you can easily see, append and insert get the same meaning,
+ * but this is expected and a minor ugliness.
+ * For the purpose of our MapReduce it's not necessary to actually
+ * define a Monoid type, because it doesn't add anything.
+ * For several cases there is redundancy here or one is a
+ * generalization of the other. Until we find a way to reverse the
+ * inheritence relation, we'll keep it like this.
+ */
+```
 
 ## References
 
