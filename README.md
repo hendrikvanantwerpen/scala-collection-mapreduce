@@ -79,11 +79,19 @@ Performance of the final solution is very close to using handwritten folds.
 
 ## Integrating MapReduce by pimping Scala Collections
 
-By using a simple implicit conversion we can add mapReduce and flatMapReduce
-functions to all Traversable types. This was we can chain mapReduce calls but
-also mix them with the regular collection operations. By doing this we can skip
-one type parameter on mapReduce because it can be inferred from the collection
-it is invoked on.
+By using a simple implicit conversion we can add mapReduce and
+flatMapReduce functions to all Traversable types. This was we can
+chain mapReduce calls but also mix them with the regular collection
+operations. By doing this we can skip one type parameter on mapReduce
+because it can be inferred from the collection it is invoked on.
+
+By making mapReduce a function without arguments but one type parameter
+that returns an object with an apply method, we can make our code even
+DRY-er.  We only have to specify the expected collection, the element
+type is inferred from the map function we pass.
+
+Finally got builders to work with proper speed, don't know what went
+wrong before. No ugly casts anymore and only Map is a special case.
 
 ## Comparison to traditional MapReduce and Monoidic MapReduce
 
@@ -108,10 +116,24 @@ $ sbt
 > test
 ```
 
+## Related
+
+ * http://www.cs.berkeley.edu/~matei/spark/
+   - Seems to do only (traditional) map/reduce seperatly
+ * http://hackage.haskell.org/packages/archive/monoids/0.2.0.4/doc/html/src/Data-Monoid-Reducer.html
+   - This looks like an implemenation of the idea in Haskell
+ * Scalaz Reducers?
+   - This is an implementation of the idea in Scalaz
+   - How integrated is it with the collections library?
+   - Only seem to support List and Stream concrete types
+   - Do not seem to support parallel collections
+ * https://github.com/scala-incubator/distributed-collections
+
 ## Notes & ideas
 
  * Scalaz dependency:
    - Will users need to pull in scalaz or the accumulators themselves?
+     It seems so, can we carry them along with MapReduce automagically?
    - Will users be repulsed by the scalaz dependency?
  * Do we want to resolve implicits on every level? E.g.
    ```scala
@@ -119,8 +141,13 @@ $ sbt
    (Int,Map[String,String]) |<| (Int,(Int,Int)) // convert second and third Int implicitly to String
    ```
  * Is the current approach with invariant type parameters enough?
+   This seems mainly a problem on the Monoid level ( SortedMap[K,V] |+| Map[K,V] breaks, but could work )
  * What are the consequences of having every Monoid <: Aggregator
    vs. Laemmels approach of every Aggregator <: Monoid
+   - Making Aggregator a Monoid and implicitly convert Monoids to
+     Aggregators causes some weird errors. The latter is needed because
+     we cannot take a Monoid as the general function argument. We wouldn't
+     have enough type parameters to infer the aggregator if needed.
 
 ## References
 

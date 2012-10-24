@@ -5,21 +5,29 @@ import Aggregators._
 
 object MapReduce {
 
-  class MapReducer[Elem](as: GenTraversableOnce[Elem]){
+  class GenMapReducer[Elem](as: GenTraversableOnce[Elem]){
     
-    def mapReduce[ResultElem, ResultColl]
-                 (f: Elem => ResultElem)
-                 (implicit p: Aggregator[ResultColl,ResultElem]) =
-  	(p.nil /: as)( (c,a) => p.insert(c, f(a)) )
+    class MapReducer[ResultColl] {
+       def apply[ResultElem](f: Elem => ResultElem)
+                (implicit p: Aggregator[ResultColl,ResultElem])
+                : ResultColl =
+  	     (p.zero /: as)( (c,a) => p.insert(c, f(a)) )
+    }
+
+    class FlatMapReducer[ResultColl] {
+       def apply[ResultElem](f: Elem => GenTraversableOnce[ResultElem])
+                (implicit p: Aggregator[ResultColl,ResultElem])
+                : ResultColl =
+  	     (p.zero /: as)( (c,a) => (c /: f(a))( (cc,aa) =>  p.insert(cc,aa) ) )
+    }
+
+    def mapReduce[ResultColl] = new MapReducer[ResultColl]
   	
-    def flatMapReduce[ResultElem, ResultColl]
-                   (f: Elem => GenTraversableOnce[ResultElem])
-                   (implicit p: Aggregator[ResultColl,ResultElem]) =
-  	  (p.nil /: as)( (c,a) => (c /: f(a))( (cc,aa) =>  p.insert(cc,aa) ) )
+    def flatMapReduce[ResultColl] = new FlatMapReducer[ResultColl]
 
   }
 
   implicit def mkMapReducable[Elem](as: GenTraversableOnce[Elem]) =
-    new MapReducer[Elem](as)
+    new GenMapReducer[Elem](as)
 
 }
