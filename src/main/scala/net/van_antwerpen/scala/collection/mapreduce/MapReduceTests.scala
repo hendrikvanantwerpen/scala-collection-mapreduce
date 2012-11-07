@@ -1,18 +1,31 @@
 package net.van_antwerpen.scala.collection.mapreduce
 
-import scala.collection.immutable.{TreeMap,SortedMap,SortedSet,TreeSet}
-import scalaz._
-import Scalaz._
-import Monoid._
+import scala.collection.immutable.{Set,TreeMap,SortedMap,SortedSet,TreeSet}
+
 import Aggregator._
 import MapReduce._
+
+import scalaz._
+import Scalaz._
+import ScalazAggregator._
+
 import scala.math.Ordering
 
 object MapReduceTests extends App {
   
-  println( SortedMap.empty[Int,Set[String]] |+| SortedMap(1 -> Set("aap")) )
-  //println( SortedMap.empty[Int,Set[String]] |+| Map(1 -> Set("aap")) ) // DOESN'T COMPILE, BUT SHOULD
-  println( Set.empty[Int] |+| Set(1) )
+  println( List(1,2) |<| 3 )
+  println( List(1,2) |<<| List(3) )
+  println( List(1,2) |<<| Set(3) )
+  println( Set(1,2) |<| 3 )
+  println( Set(1,2) |<<| Set(3) )
+  println( Set(1,2) |<<| List(3) )
+  println( Map(1 -> 2, 2 -> 2) |<| (1 -> 3) )
+  println( Map(1 -> 2, 2 -> 2) |<<| Map(1 -> 3) )
+  println( Map(1 -> 2, 2 -> 2) |<<| List((1 -> 3)) )
+  
+  println( SortedMap.empty[Int,Set[String]] |<| SortedMap(1 -> Set("aap")) )
+  println( SortedMap.empty[Int,Set[String]] |<<| Map(1 -> Set("aap")) )
+  println( Set.empty[Int] |<| Set(1) )
   println( Map.empty[String,Int] |<| ("aap",1) |<| ("noot",1) |<| ("aap",1) )
   println( Map.empty[String,Int] |<<| List( ("aap",1),("noot",1),("aap",1) ) )
 
@@ -33,7 +46,7 @@ object MapReduceTests extends App {
   println(totalLength)
   
   def countAndConcat(s: String) = (1,s)
-  implicit val agg = MonoidAggregator[(Int,String)]
+  implicit val agg = Tuple2Aggregator[Int,String,Int,String]
   val countedAndTogether = words.mapReduce[(Int,String)](wordInstance)
   println(countedAndTogether)
 

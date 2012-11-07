@@ -41,7 +41,7 @@ works but has limitations. Different functions for monoid or multoid
 values in the map. Inference only one level deep, then we need to build
 them explicitly. Also the monoids are for concrete types only.
 
-## Generic collection accumulators
+## Generic collection aggregators
 
 We want the multoids to work with any concrete map type without having
 to implement them over and over again. Leverage the design of the Scala
@@ -58,7 +58,7 @@ collection and then appended elements using the normal + operators. These
 messed up the types a bit, giving only a base type, so we cast to the
 correct type.
 
-## Fully inferred generic accumulators
+## Fully inferred generic aggregators
 
 Unified the cases for monoids and multoids by implicitly wrapping monoids
 in multoids who have the same collection as element type.
@@ -68,11 +68,18 @@ type parameters of the collections we get (e.g. the key and value type of
 map). This allowed us to completely infer multoids that go several levels
 deep. We created general multoids for maps, sets, sequences and tuples.
 
-There are situations where conflicts can occur. E.g. the Tuple2Multoid and
-the Tuple2Monoid both match when the tuple values are Monoids. Haven't found
+There are situations where conflicts can occur. E.g. our Tuple2Multoid and
+the Scalaz Tuple2Monoid both match when the tuple values are Monoids. Haven't found
 a way to resolve this automatically yet. You'll have to pick one by hand. 
 
 Performance of the final solution is very close to using handwritten folds.
+
+Laemmel describes aggregators as a subtype of Monoid, I think because
+any aggregator assumes a collection, which is a Monoid. So some Monoids
+can also take elements. In the implementation this is reversed, so a Monoid is a
+special case of aggregator, because a monoid can be expressed as an aggregator,
+not every aggregator as a monoid. To have the most general interface for mapreduce
+it must take aggregators.
 
 ## Integrating MapReduce by pimping Scala Collections
 
@@ -91,6 +98,9 @@ For some reason using the builders is very slow. We use the normal
 operations and cast to the correct type. Since we always create the
 same type of collection as we start with, assuming zero is correct,
 this should not fail.
+
+The aggregators are designed to be very generous in the input they
+accept. So a sorted map can be inserted a map, but also a list of pairs.
 
 ## Comparison to traditional MapReduce and Monoidic MapReduce
 
@@ -163,44 +173,14 @@ $ sbt
    ```
  * What are the consequences of having every Monoid <: Aggregator
    vs. Laemmels approach of every Aggregator <: Monoid
+   - Making Aggregator a Monoid and implicitly convert Monoids to
+     Aggregators causes some weird errors. The latter is needed because
+     we cannot take a Monoid as the general function argument. We wouldn't
+     have enough type parameters to infer the aggregator if needed.
+ * When collections are parallel, keep them that way (even though we
+   specify Set iso ParSet?)
    - It's needed for type inference
    - The Monoid will have doubles doing the same thing though
-
-```scala
-trait Aggregator[A,B] {
-  def zero: A
-  def insert(a: A, b: B): A
-  def flatInsert(a: A, bs: GenTraversableOnce[B]): A = (a /: bs)( append (_,_) )
-  def unit(b: B): A = insert (zero,b)
-}
-
-trait Monoid[A] extends [A,A] {
-  def zero: A
-  def insert(a1: A, a2: A): A
-  def flatInsert(a: A, as: GenTraversableOnce[A]): A = (a /: as)( append (_,_) )
-  def unit(a: A): A = a
-}
-
-implicit def ScalazMonoidAggregator[Val]
-                                   (implicit m: scalaz.Monoid[Val]) =
-  new Aggregator[Val,Val] {
-    def zero = m.zero
-    def append(v1: Val, v2: Val)  = m append (v1, v2)
-  }
-
-implicit def ScalazReducerAggregator[Coll,Elem]
-                                    (implicit m: scalaz.Reducer[Elem,Coll] = ???
-
-/* A Monoid is an Aggregator where Coll and Elem are the same.
- * As you can easily see, append and insert get the same meaning,
- * but this is expected and a minor ugliness.
- * For the purpose of our MapReduce it's not necessary to actually
- * define a Monoid type, because it doesn't add anything.
- * For several cases there is redundancy here or one is a
- * generalization of the other. Until we find a way to reverse the
- * inheritence relation, we'll keep it like this.
- */
-```
 
 ## References
 
