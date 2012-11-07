@@ -50,4 +50,15 @@ object ValueAggregators {
       override def insert(a: String, b: String) = a + b
     }
   
+  implicit def OptionMonoid[A](implicit va: Aggregator[A,A]) =
+    new Aggregator[A,Option[A]] {
+      override def zero = va.zero
+      override def insert(a1: A, a2: Option[A]) = {
+        a2 match {
+          case None => a1
+          case Some(a2) => va insert (a1,a2)
+        }
+      }
+    }
+  
 }

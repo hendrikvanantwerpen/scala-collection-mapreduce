@@ -20,6 +20,11 @@ object MapReduceTests extends App {
   println( Map(1 -> 2, 2 -> 2) |<| (1 -> 3) )
   println( Map(1 -> 2, 2 -> 2) |<<| Map(1 -> 3) )
   println( Map(1 -> 2, 2 -> 2) |<<| List((1 -> 3)) )
+
+  println( Set(1,2) |<<| Some(Set(3)) )
+  println( "1" |<<| Some("1") )
+  //println( 1 |<<| None:Option[Int] )
+  println( 0 |<<| Some(1) )
   
   println( SortedMap.empty[Int,Set[String]] |<| SortedMap(1 -> Set("aap")) )
   println( SortedMap.empty[Int,Set[String]] |<<| Map(1 -> Set("aap")) )
