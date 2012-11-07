@@ -3,11 +3,9 @@ package net.van_antwerpen.scala.collection.mapreduce
 import scala.collection.immutable.{Set,TreeMap,SortedMap,SortedSet,TreeSet}
 
 import Aggregator._
+import CollectionAggregators._
+import ValueAggregators._
 import MapReduce._
-
-import scalaz._
-import Scalaz._
-import ScalazAggregator._
 
 import scala.math.Ordering
 
@@ -46,7 +44,7 @@ object MapReduceTests extends App {
   println(totalLength)
   
   def countAndConcat(s: String) = (1,s)
-  implicit val agg = Tuple2Aggregator[Int,String,Int,String]
+  //implicit val agg = Tuple2Aggregator[Int,String,Int,String]
   val countedAndTogether = words.mapReduce[(Int,String)](wordInstance)
   println(countedAndTogether)
 
