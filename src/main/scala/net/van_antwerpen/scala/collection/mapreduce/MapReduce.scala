@@ -7,6 +7,7 @@ object MapReduce {
 
   class GenMapReducer[Elem](as: GenTraversableOnce[Elem]){
     
+    def mapReduce[ResultColl] = new MapReducer[ResultColl]
     class MapReducer[ResultColl] {
        def apply[ResultElem](f: Elem => ResultElem)
                 (implicit p: Aggregator[ResultColl,ResultElem])
@@ -14,6 +15,7 @@ object MapReduce {
   	     (p.zero /: as)( (c,a) => p.insert(c, f(a)) )
     }
 
+    def flatMapReduce[ResultColl] = new FlatMapReducer[ResultColl]
     class FlatMapReducer[ResultColl] {
        def apply[ResultElem](f: Elem => GenTraversableOnce[ResultElem])
                 (implicit p: Aggregator[ResultColl,ResultElem])
@@ -21,9 +23,9 @@ object MapReduce {
   	     (p.zero /: as)( (c,a) => (c /: f(a))( (cc,aa) =>  p.insert(cc,aa) ) )
     }
 
-    def mapReduce[ResultColl] = new MapReducer[ResultColl]
-  	
-    def flatMapReduce[ResultColl] = new FlatMapReducer[ResultColl]
+    def reduceTo[ResultColl](implicit p: Aggregator[ResultColl,Elem])
+                : ResultColl =
+  	     (p.zero /: as)( (c,a) => p.insert(c, a) )
 
   }
 

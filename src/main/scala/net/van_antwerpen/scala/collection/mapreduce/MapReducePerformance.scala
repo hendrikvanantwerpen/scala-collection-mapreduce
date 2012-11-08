@@ -8,7 +8,6 @@ import Monoid._
 import Aggregator._
 import MapReduce._
 
-
 object Timer {
   import java.util.concurrent.TimeUnit
   import java.util.concurrent.TimeUnit._

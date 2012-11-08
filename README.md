@@ -81,7 +81,7 @@ special case of aggregator, because a monoid can be expressed as an aggregator,
 not every aggregator as a monoid. To have the most general interface for mapreduce
 it must take aggregators.
 
-## Integrating MapReduce by pimping Scala Collections
+## Integrating MapReduce by enriching Scala Collections
 
 By using a simple implicit conversion we can add mapReduce and
 flatMapReduce functions to all Traversable types. This was we can
@@ -181,7 +181,10 @@ $ sbt
    specify Set iso ParSet?)
    - It's needed for type inference
    - The Monoid will have doubles doing the same thing though
+ * Implicit resolves don't seem to consider the whole type hierarchy, so
+   Agg[Set[Int],Set[Int]] is not satisfied by an implicit Agg[Set[Int],GenTraversableOnce[Int]]
 
 ## References
 
  1. Ralf Lämmel. 2007. Google's MapReduce programming model -- Revisited. Sci. Comput. Program. 68, 3 (October 2007), 208-237. DOI=10.1016/j.scico.2007.07.001 http://dx.doi.org/10.1016/j.scico.2007.07.001
+ 1. http://eed3si9n.com/revisiting-implicits-without-import-tax

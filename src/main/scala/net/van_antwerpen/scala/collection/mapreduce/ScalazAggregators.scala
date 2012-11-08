@@ -2,7 +2,7 @@ package net.van_antwerpen.scala.collection.mapreduce
 
 import scalaz._
 
-object ScalazAggregator {
+object ScalazAggregators {
 
   implicit def ScalazMonoidAggregator[A]
                                      (implicit m: Monoid[A]) =
