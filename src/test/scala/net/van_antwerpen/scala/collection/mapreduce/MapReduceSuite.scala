@@ -17,6 +17,15 @@ class MapReduceSuite extends FunSuite {
     }    
   }
 
+  test("word count in docs") {
+    expect(Map("aap" -> 3, "noot" -> 2, "acht" -> 1, "fiets" -> 1)) {
+      val docs = List("aap noot acht","fiets aap noot aap")
+      def wordcount(doc: String) = doc.split(" ").toList.map( w => (w,1) )
+      val wc = docs.mapReduce[Map[String,Int]]( wordcount )      
+      wc
+    }    
+  }  
+  
   test("word lengths") {
     expect(SortedMap(3 -> Set("aap"), 4 -> Set("noot","acht"), 5 -> Set("fiets"))) {
       words.mapReduce[Map[Int,Set[String]]]( w => (w.size,w) )
@@ -28,6 +37,16 @@ class MapReduceSuite extends FunSuite {
       words.mapReduce[Int]( _.size ) 
     }
   }
+
+  test("product of lengths with explicit aggregator") {
+    expect(8640) {
+      val ProductMonoid = new Aggregator[Int,Int] {
+        override def zero = 1
+        override def insert(i: Int, j: Int) = i * j
+      }
+      words.mapReduce( _.size )(ProductMonoid) 
+    }
+  }  
   
   test("very complex toSet") {
     expect(Set("aap","noot","acht","fiets")) {
