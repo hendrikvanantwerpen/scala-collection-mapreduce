@@ -25,11 +25,11 @@ object Aggregator {
     }
 
   implicit def GenSeqMonoid[Repr[X] <: GenSeq[X], Elem, In[X] <: GenTraversableOnce[X]]
-                           (implicit bf: CanBuildFrom[Nothing,Elem,Repr[Elem]]) =
+                           (implicit bf: CanBuildFrom[GenSeq[Elem],Elem,Repr[Elem]]) =
     new Aggregator[Repr[Elem],In[Elem]] {
       override def zero: Repr[Elem] = bf().result
       override def insert(s1: Repr[Elem], s2: In[Elem]) =
-        (s1 ++ s2).asInstanceOf[Repr[Elem]]
+        (s1.++(s2)(bf))
     }
 
   implicit def GenSetAggregator[Repr[X] <: GenSet[X], Elem]
@@ -41,11 +41,11 @@ object Aggregator {
     }
 
   implicit def GenSetMonoid[Repr[X] <: GenSet[X], Elem, In[X] <: GenTraversableOnce[X]]
-                           (implicit bf: CanBuildFrom[Nothing,Elem,Repr[Elem]]) =
+                           (implicit bf: CanBuildFrom[GenSet[Elem],Elem,Repr[Elem]]) =
     new Aggregator[Repr[Elem],In[Elem]] {
       override def zero: Repr[Elem] = bf().result
       override def insert(s1: Repr[Elem], s2: In[Elem]) =
-        (s1 ++ s2).asInstanceOf[Repr[Elem]]
+        (s1.++(s2)(bf))
     }
 
   implicit def GenMapAggregator[Repr[K,V] <: GenMap[K,V], Key, Value, Elem]

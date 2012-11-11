@@ -81,7 +81,7 @@ class MapReduceSuite extends FunSuite {
     }
   }  
   
-  test("test multiple outputs to mapReduce (former flatMapReduce") {
+  test("test multiple outputs to mapReduce (former flatMapReduce)") {
     expect(Set(1,2,3)) {
       List(List(Set(1,2),Set(2,3)),List(Set(3,1))).mapReduce[Set[Int]]( x => x )
     }

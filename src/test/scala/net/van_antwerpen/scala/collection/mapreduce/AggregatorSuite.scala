@@ -2,7 +2,7 @@ package net.van_antwerpen.scala.collection.mapreduce
 
 import org.scalatest.FunSuite
 
-import scala.collection.immutable.{SortedSet,SortedMap}
+import scala.collection.immutable._
 
 import Aggregator._
 
@@ -107,5 +107,28 @@ class AggregatorSuite extends FunSuite {
   test("how deep does the rabbithole go?") {
     expect( (2, Map(1 -> Map(1 -> 3))) ) { (0,Map.empty[Int,Map[Int,Int]]) |<| (1,(1->(1->1))) |<| (1,Map(1 -> (1 -> 2))) }
   }  
+  
+  test("type tests for sets") {
+    assert { (Set(1) |<| SortedSet(1)).isInstanceOf[Set[Int]] }
+    assert { (SortedSet(1) |<| Set(1)).isInstanceOf[SortedSet[Int]] }
+    assert { (TreeSet(1) |<| SortedSet(1)).isInstanceOf[TreeSet[Int]] }
+    assert { (SortedSet(1) |<| TreeSet(1)).isInstanceOf[TreeSet[Int]] }
+  }
+
+  test("type tests for seqs") {
+    assert { (List(1) |<| List(2)).isInstanceOf[List[Int]] }
+    assert { (LinearSeq(1) |<| List(2)).isInstanceOf[LinearSeq[Int]] }
+    assert { (Vector(1) |<| List(2)).isInstanceOf[Vector[Int]] }
+    assert { (List(1) |<| Vector(2)).isInstanceOf[List[Int]] }
+  }  
+
+  test("type tests for maps") {
+    assert { (Map(1 -> 1) |<| Map(1 -> 2)).isInstanceOf[Map[Int,Int]] }
+    assert { (Map(1 -> 1) |<| TreeMap(1 -> 2)).isInstanceOf[Map[Int,Int]] }
+    assert { (TreeMap(1 -> 1) |<| Map(1 -> 2)).isInstanceOf[TreeMap[Int,Int]] }
+    assert { (TreeMap(1 -> 1) |<| HashMap(1 -> 2)).isInstanceOf[TreeMap[Int,Int]] }
+    assert { (HashMap(1 -> 1) |<| SortedMap(1 -> 2)).isInstanceOf[HashMap[Int,Int]] }
+    assert { (HashMap(1 -> 1) |<| TreeMap(1 -> 2)).isInstanceOf[HashMap[Int,Int]] }
+  }    
   
 }
