@@ -59,6 +59,10 @@ class AggregatorSuite extends FunSuite {
   test("insert set to sorted set") {
     expect(Set(1,2)) { Set(1) |<| SortedSet(2) }
   }
+
+  test("insert nested set to sorted set") {
+    expect(Set(Set(2))) { Set.empty[Set[Int]] |<| Set(SortedSet(2)) }
+  }  
   
   test("insert sorted set to set") {
     expect(SortedSet(1,2)) { SortedSet(2) |<| Set(1) }
@@ -68,6 +72,18 @@ class AggregatorSuite extends FunSuite {
     expect(Map(1 -> 1)) { Map.empty[Int,Int] |<| (1,1) }
   }  
 
+  test("insert map to map where key is derived of subtype") {
+    expect(Map(Set(1) -> 1)) { Map.empty[Set[Int],Int] |<| Map(SortedSet(1) -> 1) }
+  }  
+  
+  test("insert map to map where value is subtype") {
+    expect(Map(1 -> Set(1))) { Map.empty[Int,Set[Int]] |<| Map(1 -> SortedSet(1)) }
+  }  
+  
+  test("insert element to map where key is of subtype") {
+    expect(Map(Set(1) -> 1)) { Map.empty[Set[Int],Int] |<| (SortedSet(1),1) }
+  }
+  
   test("insert one element with multiple values into simple map") {
     expect(Map(1 -> 6)) { Map.empty[Int,Int] |<| (1,List(1,2,3)) }
   }    
@@ -130,5 +146,5 @@ class AggregatorSuite extends FunSuite {
     assert { (HashMap(1 -> 1) |<| SortedMap(1 -> 2)).isInstanceOf[HashMap[Int,Int]] }
     assert { (HashMap(1 -> 1) |<| TreeMap(1 -> 2)).isInstanceOf[HashMap[Int,Int]] }
   }    
-  
+    
 }

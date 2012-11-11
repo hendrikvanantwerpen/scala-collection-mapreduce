@@ -16,65 +16,65 @@ object Aggregator {
   import scala.collection._
   import scala.collection.generic.CanBuildFrom
 
-  implicit def GenSeqAggregator[Repr[X] <: GenSeq[X], Elem]
+  implicit def GenSeqAggregator[Repr[X] <: GenSeq[X], Elem, InElem <: Elem]
                                (implicit bf: CanBuildFrom[Nothing,Elem,Repr[Elem]]) =
-    new Aggregator[Repr[Elem],Elem] {
+    new Aggregator[Repr[Elem],InElem] {
       override def zero: Repr[Elem] = bf().result
-      override def insert(s: Repr[Elem], e: Elem) =
+      override def insert(s: Repr[Elem], e: InElem) =
         (s :+ e).asInstanceOf[Repr[Elem]]
     }
 
-  implicit def GenSeqMonoid[Repr[X] <: GenSeq[X], Elem, In[X] <: GenTraversableOnce[X]]
+  implicit def GenSeqMonoid[Repr[X] <: GenSeq[X], Elem, In[X] <: GenTraversableOnce[X], InElem <: Elem]
                            (implicit bf: CanBuildFrom[GenSeq[Elem],Elem,Repr[Elem]]) =
-    new Aggregator[Repr[Elem],In[Elem]] {
+    new Aggregator[Repr[Elem],In[InElem]] {
       override def zero: Repr[Elem] = bf().result
-      override def insert(s1: Repr[Elem], s2: In[Elem]) =
+      override def insert(s1: Repr[Elem], s2: In[InElem]) =
         (s1.++(s2)(bf))
     }
 
-  implicit def GenSetAggregator[Repr[X] <: GenSet[X], Elem]
+  implicit def GenSetAggregator[Repr[X] <: GenSet[X], Elem, InElem <: Elem]
                                (implicit bf: CanBuildFrom[Nothing,Elem,Repr[Elem]]) =
-    new Aggregator[Repr[Elem],Elem] {
+    new Aggregator[Repr[Elem],InElem] {
       override def zero: Repr[Elem] = bf().result
-      override def insert(c: Repr[Elem], e: Elem) =
+      override def insert(c: Repr[Elem], e: InElem) =
         (c + e).asInstanceOf[Repr[Elem]]
     }
 
-  implicit def GenSetMonoid[Repr[X] <: GenSet[X], Elem, In[X] <: GenTraversableOnce[X]]
+  implicit def GenSetMonoid[Repr[X] <: GenSet[X], Elem, In[X] <: GenTraversableOnce[X], InElem <: Elem]
                            (implicit bf: CanBuildFrom[GenSet[Elem],Elem,Repr[Elem]]) =
-    new Aggregator[Repr[Elem],In[Elem]] {
+    new Aggregator[Repr[Elem],In[InElem]] {
       override def zero: Repr[Elem] = bf().result
-      override def insert(s1: Repr[Elem], s2: In[Elem]) =
+      override def insert(s1: Repr[Elem], s2: In[InElem]) =
         (s1.++(s2)(bf))
     }
 
-  implicit def GenMapAggregator[Repr[K,V] <: GenMap[K,V], Key, Value, Elem]
+  implicit def GenMapAggregator[Repr[K,V] <: GenMap[K,V], Key, Value, InKey <: Key, Elem]
                                (implicit bf: CanBuildFrom[Nothing,(Key,Value),Repr[Key,Value]],
                                          va: Aggregator[Value,Elem]) =
-    new Aggregator[Repr[Key,Value],(Key,Elem)] {
+    new Aggregator[Repr[Key,Value],(InKey,Elem)] {
       override def zero: Repr[Key,Value] = bf().result
-      override def insert(m: Repr[Key,Value], e: (Key,Elem)) =
+      override def insert(m: Repr[Key,Value], e: (InKey,Elem)) =
         (m + (e._1 -> m.get( e._1 )
                        .map( v => va insert (v,e._2) )
                        .getOrElse( va insert (va.zero,e._2) )))
         .asInstanceOf[Repr[Key,Value]]
     }
 
-  implicit def GenMapMonoidForMap[Repr[K,V] <: GenMap[K,V], Key, Value, In[X] <: GenTraversableOnce[X], Elem]
+  implicit def GenMapMonoidForMap[Repr[K,V] <: GenMap[K,V], Key, Value, In[X] <: GenTraversableOnce[X], InKey <: Key, Elem]
                            (implicit bf: CanBuildFrom[Nothing,(Key,Value),Repr[Key,Value]],
-                                     va: Aggregator[Repr[Key,Value],(Key,Elem)]) =
-    new Aggregator[Repr[Key,Value],In[(Key,Elem)]] {
+                                     va: Aggregator[Repr[Key,Value],(InKey,Elem)]) =
+    new Aggregator[Repr[Key,Value],In[(InKey,Elem)]] {
       override def zero: Repr[Key,Value] = bf().result
-      override def insert(m1: Repr[Key,Value], m2: In[(Key,Elem)]) =
-       (m1 /: m2)( (m: Repr[Key,Value], e2: (Key,Elem)) => va insert (m,e2) )
+      override def insert(m1: Repr[Key,Value], m2: In[(InKey,Elem)]) =
+       (m1 /: m2)( (m: Repr[Key,Value], e2: (InKey,Elem)) => va insert (m,e2) )
     }
-  implicit def GenMapMonoidForSeq[Repr[K,V] <: GenMap[K,V], Key, Value, In[X,Y] <: GenMap[X,Y], Elem]
+  implicit def GenMapMonoidForSeq[Repr[K,V] <: GenMap[K,V], Key, Value, In[X,Y] <: GenMap[X,Y], InKey <: Key, Elem]
                            (implicit bf: CanBuildFrom[Nothing,(Key,Value),Repr[Key,Value]],
-                                     va: Aggregator[Repr[Key,Value],(Key,Elem)]) =
-    new Aggregator[Repr[Key,Value],In[Key,Elem]] {
+                                     va: Aggregator[Repr[Key,Value],(InKey,Elem)]) =
+    new Aggregator[Repr[Key,Value],In[InKey,Elem]] {
       override def zero: Repr[Key,Value] = bf().result
-      override def insert(m1: Repr[Key,Value], m2: In[Key,Elem]) =
-       (m1 /: m2)( (m: Repr[Key,Value], e2: (Key,Elem)) => va insert (m,e2) )
+      override def insert(m1: Repr[Key,Value], m2: In[InKey,Elem]) =
+       (m1 /: m2)( (m: Repr[Key,Value], e2: (InKey,Elem)) => va insert (m,e2) )
     }
   
   implicit def GroupAggregator[Coll,In[X] <: GenTraversableOnce[X],Elem]
@@ -132,18 +132,7 @@ object Aggregator {
       override def zero = ""
       override def insert(a: String, b: String) = a + b
     }
-  
-  implicit def OptionMonoid[A](implicit va: Aggregator[A,A]) =
-    new Aggregator[A,Option[A]] {
-      override def zero = va.zero
-      override def insert(a1: A, a2: Option[A]) = {
-        a2 match {
-          case None => a1
-          case Some(a2) => va insert (a1,a2)
-        }
-      }
-    }
-  
+    
   class AggregatorIdentity[A](a: A) {
 
     def |<|[B](b: B)
