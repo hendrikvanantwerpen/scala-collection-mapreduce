@@ -13,7 +13,7 @@ class AggregatorSuite extends FunSuite {
   }
 
   test("insert list of ints") {
-    expect(4) { 1 |<<| List(1,2) }
+    expect(4) { 1 |<| List(1,2) }
   }
 
   test("insert tuple of ints") {
@@ -21,7 +21,7 @@ class AggregatorSuite extends FunSuite {
   }
 
   test("insert list of tuples of ints") {
-    expect((4,4)) { (1,1) |<<| List((1,1),(2,2)) }
+    expect((4,4)) { (1,1) |<| List((1,1),(2,2)) }
   }
 
   test("insert element to list") {
@@ -33,11 +33,11 @@ class AggregatorSuite extends FunSuite {
   }
 
   test("flatInsert list of lists to list") {
-    expect(List(1,2,3)) { List(1) |<<| List(List(2),List(3)) }
+    expect(List(1,2,3)) { List(1) |<| List(List(2),List(3)) }
   }  
 
   test("flatInsert set of sets to list") {
-    expect(List(1,2,3)) { List(1) |<<| Set(Set(2),Set(3)) }
+    expect(List(1,2,3)) { List(1) |<| Set(Set(2),Set(3)) }
   }    
   
   test("insert set to list") {
@@ -67,6 +67,14 @@ class AggregatorSuite extends FunSuite {
   test("insert element to simple map") {
     expect(Map(1 -> 1)) { Map.empty[Int,Int] |<| (1,1) }
   }  
+
+  test("insert one element with multiple values into simple map") {
+    expect(Map(1 -> 6)) { Map.empty[Int,Int] |<| (1,List(1,2,3)) }
+  }    
+
+  test("insert list of elements with multiple values into simple map") {
+    expect(Map(1 -> 8)) { Map.empty[Int,Int] |<| List((1,List(1,2,3)),(1,List(1,1))) }
+  }      
   
   test("insert map to simple map") {
     expect(Map(1 -> 1)) { Map.empty[Int,Int] |<| Map(1 -> 1) }

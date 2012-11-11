@@ -7,8 +7,6 @@ import scala.annotation.implicitNotFound
 trait Aggregator[A,B] {
   def zero: A
   def insert(a: A, b: B): A
-  def flatInsert(a: A, bs: GenTraversableOnce[B]): A =
-    (a /: bs)( this insert (_,_) )
   def unit(b: B): A =
     insert (zero,b) 
 } 
@@ -52,7 +50,7 @@ object Aggregator {
 
   implicit def GenMapAggregator[Repr[K,V] <: GenMap[K,V], Key, Value, Elem]
                                (implicit bf: CanBuildFrom[Nothing,(Key,Value),Repr[Key,Value]],
-                                          va: Aggregator[Value,Elem]) =
+                                         va: Aggregator[Value,Elem]) =
     new Aggregator[Repr[Key,Value],(Key,Elem)] {
       override def zero: Repr[Key,Value] = bf().result
       override def insert(m: Repr[Key,Value], e: (Key,Elem)) =
@@ -64,7 +62,7 @@ object Aggregator {
 
   implicit def GenMapMonoidForMap[Repr[K,V] <: GenMap[K,V], Key, Value, In[X] <: GenTraversableOnce[X], Elem]
                            (implicit bf: CanBuildFrom[Nothing,(Key,Value),Repr[Key,Value]],
-                                      va: Aggregator[Repr[Key,Value],(Key,Elem)]) =
+                                     va: Aggregator[Repr[Key,Value],(Key,Elem)]) =
     new Aggregator[Repr[Key,Value],In[(Key,Elem)]] {
       override def zero: Repr[Key,Value] = bf().result
       override def insert(m1: Repr[Key,Value], m2: In[(Key,Elem)]) =
@@ -72,11 +70,19 @@ object Aggregator {
     }
   implicit def GenMapMonoidForSeq[Repr[K,V] <: GenMap[K,V], Key, Value, In[X,Y] <: GenMap[X,Y], Elem]
                            (implicit bf: CanBuildFrom[Nothing,(Key,Value),Repr[Key,Value]],
-                                      va: Aggregator[Repr[Key,Value],(Key,Elem)]) =
+                                     va: Aggregator[Repr[Key,Value],(Key,Elem)]) =
     new Aggregator[Repr[Key,Value],In[Key,Elem]] {
       override def zero: Repr[Key,Value] = bf().result
       override def insert(m1: Repr[Key,Value], m2: In[Key,Elem]) =
        (m1 /: m2)( (m: Repr[Key,Value], e2: (Key,Elem)) => va insert (m,e2) )
+    }
+  
+  implicit def GroupAggregator[Coll,In[X] <: GenTraversableOnce[X],Elem]
+                          (implicit va: Aggregator[Coll,Elem])=
+    new Aggregator[Coll,In[Elem]] {
+	  override def zero = va.zero
+	  override def insert(a: Coll, as: In[Elem]) =
+	    (a /: as)( (c,e) => va insert (c,e) )
     }
   
   implicit def Tuple2Aggregator[A1,A2,B1,B2]
@@ -143,10 +149,6 @@ object Aggregator {
     def |<|[B](b: B)
               (implicit agg: Aggregator[A,B]) =
       agg insert (a, b)
-
-    def |<<|[B](bs: GenTraversableOnce[B])
-               (implicit agg: Aggregator[A,B]) =
-      agg flatInsert (a, bs)
 
   }
 
