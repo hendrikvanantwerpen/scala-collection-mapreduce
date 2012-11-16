@@ -183,6 +183,7 @@ $ sbt
    - The Monoid will have doubles doing the same thing though
  * Implicit resolves don't seem to consider the whole type hierarchy, so
    Agg[Set[Int],Set[Int]] is not satisfied by an implicit Agg[Set[Int],GenTraversableOnce[Int]]
+ * Remember to specify concrete types, so not GenMap but SortedMap.
 
 ## References
 

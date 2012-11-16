@@ -78,7 +78,7 @@ object Aggregator {
     }
   
   implicit def GroupAggregator[Coll,In[X] <: GenTraversableOnce[X],Elem]
-                          (implicit va: Aggregator[Coll,Elem])=
+                              (implicit va: Aggregator[Coll,Elem])=
     new Aggregator[Coll,In[Elem]] {
 	  override def zero = va.zero
 	  override def insert(a: Coll, as: In[Elem]) =
@@ -133,6 +133,14 @@ object Aggregator {
       override def insert(a: String, b: String) = a + b
     }
     
+  implicit def EitherMonoid[Coll,Elem,Err,InErr <: Err]
+                           (implicit va: Aggregator[Coll,Elem]) =
+    new Aggregator[Either[Err,Coll],Either[InErr,Elem]] {
+	  override def zero = Right(va.zero)
+	  override def insert(a1: Either[Err,Coll], a2: Either[InErr,Elem]) =
+	    a1.right.flatMap( coll => a2.right.map( elem => va insert (coll,elem) ) )
+    }
+  
   class AggregatorIdentity[A](a: A) {
 
     def |<|[B](b: B)

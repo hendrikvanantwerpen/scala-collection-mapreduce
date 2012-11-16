@@ -24,6 +24,17 @@ class AggregatorSuite extends FunSuite {
     expect((4,4)) { (1,1) |<| List((1,1),(2,2)) }
   }
 
+  test("insert right either") {
+    type E = Either[String,Int]
+    expect(Right(4)) { (Right(1):E) |<| (Right(1):E) |<| (Right(2):E) }
+  }
+
+  test("insert left either") {
+    type E = Either[String,Int]
+    expect(Left("abort")) { (Right(1):E) |<| (Left("abort"):E) |<| (Right(2):E) }
+  }
+  
+  
   test("insert element to list") {
     expect(List(1,2)) { List(1) |<| 2 }
   }
