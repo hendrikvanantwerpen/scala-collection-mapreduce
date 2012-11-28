@@ -1,6 +1,9 @@
 *.class
 *.log
 
+# TexMaker
+build/
+
 # sbt specific
 dist/*
 target/
