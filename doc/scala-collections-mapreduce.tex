@@ -213,7 +213,11 @@ val prodOfWordLengths = words.mapReduce( w => w.size )(ProductMonoid)
 \end{lstlisting}
 As you can see the result type is not required, because it is inferred from the aggregator.
 
+\section{Discussion}
+
 This fully implements the Sawzall map-reduce model as it is formalized in \cite{lammel2008google}. The use of aggregators instead of monoids gives us even more freedom in the output of our map functions than L\"ammel's model does. The integration with the Scala collections library makes using map-reduce very easy for programmers used to that idiom.
+
+One library that contains similar concepts is the Scalaz\footnote{See \url{http://code.google.com/p/scalaz/}} library. There are two main differences in approach. First Scalaz tries to provide a very rich and complete library of functional concepts, we tried to focus only on the MapReduce model, keeping the concepts simple. This should make it easier for users to understand and apply the library as well as to implement new aggregators. For our library, one has to implement an \lstinline|Aggregator| only, where in Scalaz one has to implement a \lstinline|Zero| and a \lstinline|SemiGroup|. Second our design allows for much more flexibility than the strict \lstinline|Monoid| approach of Scalaz allows. It is possible that the \lstinline|Reducer| from Scalaz addresses the last point, but not enough information was found to be able to judge that.
 
 \bibliographystyle{abbrvnat}
 \bibliography{github-relations-viz}
